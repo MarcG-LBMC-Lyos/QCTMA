@@ -1,2 +1,0 @@
-qctma
-rw_cdb
