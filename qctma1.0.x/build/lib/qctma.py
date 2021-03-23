@@ -17,7 +17,20 @@ class qctma(object):
     density relationship and density to Young's modulus relationship.
     """
 
-    def __init__(self, dcm_path="", mesh_path="", gl2density=lambda x: x, density2E=lambda x: x, deltaE=0, process=True, save_mesh_path=""):
+    def __init__(self, dcm_path="", mesh_path="", gl2density=lambda x: x, density2E=lambda x: x, deltaE=0,
+                 process=False, save_mesh_path=""):
+        """
+        Constructs a qctma object from the Dicoms directory path, the original mesh file path, the gray level to density
+        relation, the density to Young's modulus relation, and the Young's modulus delta step.
+        The instance can directly process the data to create the final mesh (implemented with materials).
+        :param dcm_path: Dicoms directory path
+        :param mesh_path: Original mesh file path
+        :param gl2density: Gray level to density relation
+        :param density2E: Density to Young's modulus relation
+        :param deltaE: Young's modulus delta step for material
+        :param process: If True, will process the data when instance is created.
+        :param save_mesh_path: Path to the desired location of the final mesh.
+        """
         self.dcm_path = dcm_path  # Path to the directory containing the Dicom files
         self.mesh_path = mesh_path  # Path to the mesh file
         self.gl2density = gl2density  # Function transforming gray level 3D array to density 3D array
@@ -195,7 +208,10 @@ class qctma(object):
         Parallelized process! Needs to be launched within a __main__ process.
         """
         save_list = Manager().list([[]] * self.nb_process)
-        p = [Process(target=self.material_integration, args=(self.connection_array, self.x, self.y, self.z, self.interpolator, save_list, self.nb_process, id)) for id in range(self.nb_process)]
+        p = [Process(target=self.material_integration,
+                     args=(self.connection_array, self.x, self.y, self.z,self.interpolator, save_list,
+                           self.nb_process, id))
+             for id in range(self.nb_process)]
         for i in range(self.nb_process):
             p[i].start()
         for i in range(self.nb_process):

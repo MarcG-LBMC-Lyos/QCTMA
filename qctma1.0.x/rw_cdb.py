@@ -92,7 +92,7 @@ def get_E(path):
 def get_nu(path):
     return
 
-def write_cdb_mat(self, source_mesh_path, save_mesh_path, matid, e_pool, density_pool):
+def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool):
     """
     Write a new CDB mesh file based on a source CDB file, with materials defined assigned to each element.
     :param save_mesh_path: Path to the CDB mesh file that will be saved.

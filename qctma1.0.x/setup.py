@@ -21,7 +21,7 @@ setup(name='qctma',
                         'numpy>=1.20.1', 'orthopy>=0.8.5', 'packaging>=20.9', 'pexpect>=4.8.0', 'Pillow>=8.1.2',
                         'protobuf>=3.15.6', 'ptyprocess>=0.7.0', 'pyasn1>=0.4.8', 'pyasn1-modules>=0.2.8',
                         'pydicom>=2.1.2', 'pyparsing>=2.4.7', 'python-dateutil>=2.8.1', 'pytz>=2021.1',
-                        'pyvista>=0.29.0', 'quadpy>=0.16.6', 'requests>=2.25.1', 'rsa>=4.7.2', 'scipy>=1.6.1',
+                        'pyvista>=0.29.0', 'quadpy>=0.16.6', 'reportlab>=3.5.66', 'requests>=2.25.1', 'rsa>=4.7.2', 'scipy>=1.6.1',
                         'scooby>=0.5.6', 'six>=1.15.0', 'sympy>=1.7.1', 'tqdm>=4.59.0', 'transforms3d>=0.3.1',
                         'typing-extensions>=3.7.4.3', 'uritemplate>=3.0.1', 'urllib3>=1.26.4', 'vtk>=9.0.1',
                         'zipp>=3.4.1'
