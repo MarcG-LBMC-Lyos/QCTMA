@@ -1,0 +1,11 @@
+[build-system]
+requires = [
+    "setuptools>=40",
+    "wheel",
+    "pydicom",
+    "numpy",
+    "scipy",
+    "quadpy",
+    "pyansys"
+]
+build-backend = "setuptools.build_meta"

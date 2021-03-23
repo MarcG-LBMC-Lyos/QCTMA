@@ -1,0 +1,10 @@
+README.md
+pyproject.toml
+qctma.py
+rw_cdb.py
+setup.py
+qctma.egg-info/PKG-INFO
+qctma.egg-info/SOURCES.txt
+qctma.egg-info/dependency_links.txt
+qctma.egg-info/requires.txt
+qctma.egg-info/top_level.txt
