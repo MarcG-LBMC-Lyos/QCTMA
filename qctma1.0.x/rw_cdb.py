@@ -1,7 +1,7 @@
 import numpy as np
 
 
-__version__ = "1.0.4"
+__version__ = "1.0.6"
 
 def read_cdbfile(path, type='Tet'):
     """
@@ -129,8 +129,11 @@ def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool)
 
                 if extract_mat:
                     for i in range(len(e_pool)):
+                        f_out.write("MPTEMP,R5.0, 1, 1,  0.00000000    ,\n")
                         f_out.write("MPDATA,R5.0, 1,EX,%6i, 1, %.8f    ,\n" % (i + 1, e_pool[i]))
+                        f_out.write("MPTEMP,R5.0, 1, 1,  0.00000000    ,\n")
                         f_out.write("MPDATA,R5.0, 1,NUXY,%6i, 1, %.8f    ,\n" % (i + 1, 0.3))
+                        f_out.write("MPTEMP,R5.0, 1, 1,  0.00000000    ,\n")
                         f_out.write("MPDATA,R5.0, 1,DENS,%6i, 1, %.8f    ,\n" % (i + 1, density_pool[i]))
                     f_out.write("\n")
                     f_out.write("/GO\n")
