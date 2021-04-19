@@ -19,6 +19,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
+__version__ = "1.0.5"
+
 class qctma(object):
     """
     Class used to load Dicom files and mesh file, and create a new mesh implementing materials based on gray level to
@@ -387,12 +389,13 @@ class qctma(object):
         if save_mesh_path.lower().endswith(".cdb"):
             write_cdb_mat(self.mesh_path, save_mesh_path, self.matid, self.e_pool, self.density_pool)
         else:
-            warnings.warn("WARNING: Extension of the desired save path of the mesh not recognized.")
+            warnings.warn("WARNING: Extension of the desired save path of the mesh not recognized. Unable to save the Mesh.")
 
         if report:
             doc_name = "%s_qctma_report.pdf" % os.path.basename(os.path.splitext(save_mesh_path)[0])
             doc_path = os.path.join(os.path.split(save_mesh_path)[0], doc_name)
-            temp_img_path = os.path.join(os.path.split(save_mesh_path)[0], "temp_img.png")
+            temp_img_path1 = os.path.join(os.path.split(save_mesh_path)[0], "temp_img1.png")
+            temp_img_path2 = os.path.join(os.path.split(save_mesh_path)[0], "temp_img2.png")
             doc = SimpleDocTemplate(doc_path,pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72,
                                     bottomMargin=18)
             content = []
@@ -415,8 +418,8 @@ class qctma(object):
             plt.xlabel('Gray Level')
             plt.ylabel('Density')
             plt.tight_layout()
-            plt.savefig(temp_img_path)
-            im = Image(temp_img_path)
+            plt.savefig(temp_img_path1)
+            im = Image(temp_img_path1)
             content.append(im)
             del im
             content.append(Spacer(1, 12))
@@ -438,13 +441,14 @@ class qctma(object):
             plt.xlabel('Density')
             plt.ylabel("Young's modulus")
             plt.tight_layout()
-            plt.savefig(temp_img_path)
-            im = Image(temp_img_path)
+            plt.savefig(temp_img_path2)
+            im = Image(temp_img_path2)
             content.append(im)
             del im
             content.append(Spacer(1, 12))
 
             doc.build(content)
-            os.remove(temp_img_path)
+            os.remove(temp_img_path1)
+            os.remove(temp_img_path2)
 
 

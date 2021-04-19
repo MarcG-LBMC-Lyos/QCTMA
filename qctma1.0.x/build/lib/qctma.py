@@ -9,7 +9,17 @@ from scipy.interpolate import NearestNDInterpolator
 import quadpy as qp
 import warnings
 from ansys.mapdl.reader import Archive
+import inspect
 
+import matplotlib.pyplot as plt
+from reportlab.lib.enums import TA_JUSTIFY
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Preformatted, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+
+
+__version__ = "1.0.4"
 
 class qctma(object):
     """
@@ -156,9 +166,9 @@ class qctma(object):
         coord_mesh_min = (np.min(self.x), np.min(self.y), np.min(self.z))
         coord_mesh_max = (np.max(self.x), np.max(self.y), np.max(self.z))
         idx_img_mat_min = self.pixel_location_from_coord(*coord_mesh_min,
-                                                    self.positions_x, self.positions_y, self.positions_z)
+                                                         self.positions_x, self.positions_y, self.positions_z)
         idx_img_mat_max = self.pixel_location_from_coord(*coord_mesh_max,
-                                                    self.positions_x, self.positions_y, self.positions_z)
+                                                         self.positions_x, self.positions_y, self.positions_z)
         idx_x = np.sort([idx_img_mat_min[0], idx_img_mat_max[0]])
         idx_y = np.sort([idx_img_mat_min[1], idx_img_mat_max[1]])
         idx_z = np.sort([idx_img_mat_min[2], idx_img_mat_max[2]])
@@ -219,7 +229,8 @@ class qctma(object):
 
         self.e_elems = np.concatenate(save_list)  # Integrals of interp over each elem (i.e. Young's modulus of each elem)
 
-    def material_integration(self, connection_array, x, y, z, interp, save_list, nb_process, id):
+    @staticmethod
+    def material_integration(connection_array, x, y, z, interp, save_list, nb_process, id):
         """
         Computes the integration of the Young's modulus over each element based on the mapping of the Young's
         modulus over each point (x, y, z) by the function interp.
@@ -368,9 +379,74 @@ class qctma(object):
     def e_pool2density(self):
         self.density_pool = self.inv_num(self.density2E, self.e_pool)
 
-    def save_mesh(self, save_mesh_path):
+    def save_mesh(self, save_mesh_path, report=True):
+        """
+        Save the final mesh and may produce a report of the processing.
+        :param save_mesh_path: Path to the desired location of the final mesh.
+        :parma report: If True, also produce a report stating the processing parameters and the final mesh
+        characteristics located in the same directory as the final mesh.
+        """
         if save_mesh_path.lower().endswith(".cdb"):
             write_cdb_mat(self.mesh_path, save_mesh_path, self.matid, self.e_pool, self.density_pool)
         else:
             warnings.warn("WARNING: Extension of the desired save path of the mesh not recognized.")
+
+        if report:
+            doc_name = "%s_qctma_report.pdf" % os.path.basename(os.path.splitext(save_mesh_path)[0])
+            doc_path = os.path.join(os.path.split(save_mesh_path)[0], doc_name)
+            temp_img_path = os.path.join(os.path.split(save_mesh_path)[0], "temp_img.png")
+            doc = SimpleDocTemplate(doc_path,pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72,
+                                    bottomMargin=18)
+            content = []
+            styles = getSampleStyleSheet()
+
+            # gl2density function
+            ptext = '<font size="16">%s</font>' % "Gray Level to Density function"
+            content.append(Paragraph(ptext, styles["Normal"]))
+            content.append(Spacer(1, 12))
+
+            ptexts = ['%s' % line for line in inspect.getsource(self.gl2density).split('\n')]
+            for ptext in ptexts:
+                content.append(Preformatted(ptext, styles["Normal"]))
+            content.append(Spacer(1, 12))
+
+            plt.figure(figsize=(5.31, 3))
+            gl = np.linspace(np.min(self.image_mat), np.max(self.image_mat), 100)
+            rho = self.gl2density(gl)
+            plt.plot(gl, rho, '-')
+            plt.xlabel('Gray Level')
+            plt.ylabel('Density')
+            plt.tight_layout()
+            plt.savefig(temp_img_path)
+            im = Image(temp_img_path)
+            content.append(im)
+            del im
+            content.append(Spacer(1, 12))
+
+            # density2E function
+            ptext = '<font size="16">%s</font>' % "Density to Young's modulus function"
+            content.append(Paragraph(ptext, styles["Normal"]))
+            content.append(Spacer(1, 12))
+
+            ptexts = ['%s' % line for line in inspect.getsource(self.density2E).split('\n')]
+            for ptext in ptexts:
+                content.append(Preformatted(ptext, styles["Normal"]))
+            content.append(Spacer(1, 12))
+
+            plt.figure(figsize=(5.31, 3))
+            rho = np.linspace(np.min(self.e_mat), np.max(self.e_mat), 100)
+            e = self.density2E(rho)
+            plt.plot(rho, e, '-')
+            plt.xlabel('Density')
+            plt.ylabel("Young's modulus")
+            plt.tight_layout()
+            plt.savefig(temp_img_path)
+            im = Image(temp_img_path)
+            content.append(im)
+            del im
+            content.append(Spacer(1, 12))
+
+            doc.build(content)
+            os.remove(temp_img_path)
+
 

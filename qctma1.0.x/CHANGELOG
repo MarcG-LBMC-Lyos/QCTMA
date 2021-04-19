@@ -1,0 +1,6 @@
+[1.0.4]
+- Added a __version__ variable in qctma.py and rw_cdb.py file
+- Added a CHANGLEOG file.
+
+[1.0.5]
+- Corrected figures in report file

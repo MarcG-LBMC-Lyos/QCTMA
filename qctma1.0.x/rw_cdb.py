@@ -1,6 +1,8 @@
 import numpy as np
 
 
+__version__ = "1.0.4"
+
 def read_cdbfile(path, type='Tet'):
     """
     Extract the elements number and their associated material from a cdb mesh file.
