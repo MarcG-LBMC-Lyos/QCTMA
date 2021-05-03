@@ -1,14 +1,12 @@
 Metadata-Version: 1.2
 Name: qctma
-Version: 1.0.7.1
+Version: 1.0.7.2
 Summary: Injects material (Young's modulus) to each element, based on a Dicom stack, and gray level to Young'smodulus relationships. Specifically designed to be used with Ansys .cdb meshes.
 Home-page: https://github.com/MarcG-LBMC-Lyos/QCTMA
 Author: Marc Gardegaront
 Author-email: m.gardegaront@gmail.com
 License: GNU GPLv3
-Description: <p align="center">
-        <img src="https://github.com/MarcG-LBMC-Lyos/QCTMA/blob/main/imgs/Illustration.jpg?raw=true">
-        </p>
+Description: ![](https://github.com/MarcG-LBMC-Lyos/QCTMA/blob/main/imgs/Illustration.jpg?raw=true)
         
         Injects material (Young's modulus) to each element, based on a Dicom stack, and gray level to Young's modulus relationships. Specifically designed to be used with Ansys .cdb meshes.
 Platform: UNKNOWN
