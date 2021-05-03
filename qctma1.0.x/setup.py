@@ -5,7 +5,7 @@ with open("README.md") as f:
     long_description = f.read()
 
 setup(name='qctma',
-      version='1.0.7',
+      version='1.0.7.1',
       description="Injects material (Young's modulus) to each element, based on a Dicom stack, and gray level to Young's"
                   "modulus relationships. Specifically designed to be used with Ansys .cdb meshes.",
       long_description=long_description,
