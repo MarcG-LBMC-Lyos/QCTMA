@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.4"
+__version__ = "1.0.7"
 
 class qctma(object):
     """
@@ -28,7 +28,7 @@ class qctma(object):
     """
 
     def __init__(self, dcm_path="", mesh_path="", gl2density=lambda x: x, density2E=lambda x: x, deltaE=0,
-                 process=False, save_mesh_path=""):
+                 process=False, save_mesh_path="", nb_process=1):
         """
         Constructs a qctma object from the Dicoms directory path, the original mesh file path, the gray level to density
         relation, the density to Young's modulus relation, and the Young's modulus delta step.
@@ -40,6 +40,7 @@ class qctma(object):
         :param deltaE: Young's modulus delta step for material
         :param process: If True, will process the data when instance is created.
         :param save_mesh_path: Path to the desired location of the final mesh.
+        :param nb_process: Number of used process. if > 1, multiprocessing package will be used.
         """
         self.dcm_path = dcm_path  # Path to the directory containing the Dicom files
         self.mesh_path = mesh_path  # Path to the mesh file
@@ -69,7 +70,9 @@ class qctma(object):
         self.interpolator = None  # Interpolator Young's modulus = f(x, y, z)
         self.e_elems = []  # 1D array of Young's modulus of each element
 
-        self.nb_process = cpu_count() - 1  # Number of core for the parallelized process
+        self.nb_process = nb_process  # Number of core for the parallelized process
+        if self.nb_process > 1:
+            warnings.warn("WARNING: More than 1 process will be used. Check if your code runs inside <if __name__ == '__main__':> statement !")
 
         # PROCESSING THE DATA
         if process:
@@ -217,15 +220,20 @@ class qctma(object):
         Associate the Young's modulus to each element by integrating the E matrix over each element.
         Parallelized process! Needs to be launched within a __main__ process.
         """
-        save_list = Manager().list([[]] * self.nb_process)
-        p = [Process(target=self.material_integration,
-                     args=(self.connection_array, self.x, self.y, self.z,self.interpolator, save_list,
-                           self.nb_process, id))
-             for id in range(self.nb_process)]
-        for i in range(self.nb_process):
-            p[i].start()
-        for i in range(self.nb_process):
-            p[i].join()
+        if self.nb_process > 1:
+            save_list = Manager().list([[]] * self.nb_process)
+            p = [Process(target=self.material_integration,
+                         args=(self.connection_array, self.x, self.y, self.z,self.interpolator, save_list,
+                               self.nb_process, id))
+                 for id in range(self.nb_process)]
+            for i in range(self.nb_process):
+                p[i].start()
+            for i in range(self.nb_process):
+                p[i].join()
+        else:
+            save_list = [[]]
+            self.material_integration(self.connection_array, self.x, self.y, self.z,self.interpolator, save_list,
+                                      self.nb_process, 0)
 
         self.e_elems = np.concatenate(save_list)  # Integrals of interp over each elem (i.e. Young's modulus of each elem)
 
@@ -386,15 +394,18 @@ class qctma(object):
         :parma report: If True, also produce a report stating the processing parameters and the final mesh
         characteristics located in the same directory as the final mesh.
         """
+        if save_mesh_path == "":
+            save_mesh_path = os.path.splitext(self.mesh_path)[0] + "_QCTMA.cdb"
         if save_mesh_path.lower().endswith(".cdb"):
             write_cdb_mat(self.mesh_path, save_mesh_path, self.matid, self.e_pool, self.density_pool)
         else:
-            warnings.warn("WARNING: Extension of the desired save path of the mesh not recognized.")
+            warnings.warn("WARNING: Extension of the desired save path of the mesh not recognized. Unable to save the Mesh.")
 
         if report:
             doc_name = "%s_qctma_report.pdf" % os.path.basename(os.path.splitext(save_mesh_path)[0])
             doc_path = os.path.join(os.path.split(save_mesh_path)[0], doc_name)
-            temp_img_path = os.path.join(os.path.split(save_mesh_path)[0], "temp_img.png")
+            temp_img_path1 = os.path.join(os.path.split(save_mesh_path)[0], "temp_img1.png")
+            temp_img_path2 = os.path.join(os.path.split(save_mesh_path)[0], "temp_img2.png")
             doc = SimpleDocTemplate(doc_path,pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72,
                                     bottomMargin=18)
             content = []
@@ -417,8 +428,8 @@ class qctma(object):
             plt.xlabel('Gray Level')
             plt.ylabel('Density')
             plt.tight_layout()
-            plt.savefig(temp_img_path)
-            im = Image(temp_img_path)
+            plt.savefig(temp_img_path1)
+            im = Image(temp_img_path1)
             content.append(im)
             del im
             content.append(Spacer(1, 12))
@@ -440,13 +451,14 @@ class qctma(object):
             plt.xlabel('Density')
             plt.ylabel("Young's modulus")
             plt.tight_layout()
-            plt.savefig(temp_img_path)
-            im = Image(temp_img_path)
+            plt.savefig(temp_img_path2)
+            im = Image(temp_img_path2)
             content.append(im)
             del im
             content.append(Spacer(1, 12))
 
             doc.build(content)
-            os.remove(temp_img_path)
+            os.remove(temp_img_path1)
+            os.remove(temp_img_path2)
 
 

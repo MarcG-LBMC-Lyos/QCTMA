@@ -7,3 +7,7 @@
 
 [1.0.6]
 - Corrected writing of CDB file (missing "MPTEMP,R5.0, 1, 1,  0.00000000    ," line between each material data).
+
+[1.0.7]
+- Support processing with no use of multiprocessing (default)
+- If no save_file_path given, write the created cdb with the same name as the source cdb, with "_QCTMA" added at the end.
