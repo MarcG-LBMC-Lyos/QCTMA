@@ -11,3 +11,6 @@
 [1.0.7]
 - Support processing with no use of multiprocessing (default)
 - If no save_file_path given, write the created cdb with the same name as the source cdb, with "_QCTMA" added at the end.
+
+[1.0.8]
+- Added functions in rw_cdb to extract Young's modulus, Poisson's ratio, and density from cdb file.

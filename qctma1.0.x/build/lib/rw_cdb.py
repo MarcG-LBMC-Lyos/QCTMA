@@ -1,7 +1,7 @@
 import numpy as np
 
 
-__version__ = "1.0.7"
+__version__ = "1.0.8"
 
 def read_cdbfile(path, type='Tet'):
     """
@@ -86,13 +86,40 @@ def read_cdbfile(path, type='Tet'):
     return elems, materials, nodes, x, y, z
 
 def get_density(path):
-    return
+    """
+    Extract density from cdb file.
+    """
+    rho = []
+    with open(path, 'r', errors="ignore") as f:
+        for line in f:
+            if "MPDATA" in line:
+                if "DENS" in line:
+                    rho.append(float(line.split(',')[-2]))
+    return np.array(rho)
 
 def get_E(path):
-    return
+    """
+    Extract Young's modulus from cdb file.
+    """
+    E = []
+    with open(path, 'r', errors="ignore") as f:
+        for line in f:
+            if "MPDATA" in line:
+                if "EX" in line:
+                    E.append(float(line.split(',')[-2]))
+    return np.array(E)
 
 def get_nu(path):
-    return
+    """
+    Extract Poisson's ratio from cdb file.
+    """
+    nu = []
+    with open(path, 'r', errors="ignore") as f:
+        for line in f:
+            if "MPDATA" in line:
+                if "NUXY" in line:
+                    nu.append(float(line.split(',')[-2]))
+    return np.array(nu)
 
 def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool):
     """
