@@ -14,3 +14,7 @@
 
 [1.0.8]
 - Added functions in rw_cdb to extract Young's modulus, Poisson's ratio, and density from cdb file.
+
+[1.0.9]
+- Changed fixed degree of gaussian quadrature to "get_good_scheme" function from quadpy.
+- Corrected "reduce_material" function to avoid inappropriate low density/E values (e.g. negative values).
