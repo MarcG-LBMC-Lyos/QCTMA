@@ -24,3 +24,6 @@
 
 [1.0.11]
 - Removed unnecessary packages from setuptool and requirements.
+
+[1.0.12]
+- Lowered versions of necessary packages for compatibility issues.
