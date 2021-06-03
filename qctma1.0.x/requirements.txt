@@ -1,6 +1,6 @@
-matplotlib>=3.3.4
-numpy>=1.20.1
+matplotlib>=2.2.5
+numpy>=1.19.5
 pydicom>=2.1.2
-quadpy>=0.16.6
-scipy>=1.6.1
+quadpy>=0.16.5
+scipy>=1.5.4
 reportlab>=3.5.66
