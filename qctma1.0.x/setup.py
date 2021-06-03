@@ -2,7 +2,7 @@ from setuptools import setup
 
 
 setup(name='qctma',
-      version='1.0.9',
+      version='1.0.10',
       description="Injects material (Young's modulus) to each element, based on a Dicom stack, and gray level to Young's"
                   "modulus relationships. Specifically designed to be used with Ansys .cdb meshes.",
       long_description="Injects material (Young's modulus) to each element, based on a Dicom stack, and gray level to Young's"
@@ -12,8 +12,7 @@ setup(name='qctma',
       author_email='m.gardegaront@gmail.com',
       license='GNU GPLv3',
       py_modules=['qctma', 'rw_cdb'],
-      install_requires=['ansys-dpf-core>=0.2.1', 'ansys-grpc-dpf>=0.2.2', 'ansys-mapdl-reader>=0.50.7',
-                        'appdirs>=1.4.4', 'cachetools>=4.2.1', 'certifi>=2020.12.5', 'chardet>=4.0.0', 'cycler>=0.10.0',
+      install_requires=['appdirs>=1.4.4', 'cachetools>=4.2.1', 'certifi>=2020.12.5', 'chardet>=4.0.0', 'cycler>=0.10.0',
                         'google-api-core>=1.26.1', 'google-api-python-client>=2.0.2', 'google-auth>=1.28.0',
                         'google-auth-httplib2>=0.1.0', 'googleapis-common-protos>=1.53.0', 'grpcio>=1.36.1',
                         'httplib2>=0.19.0', 'idna>=2.10', 'imageio>=2.9.0', 'importlib-metadata>=3.7.3',

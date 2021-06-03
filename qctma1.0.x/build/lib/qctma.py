@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.8"
+__version__ = "1.0.9"
 
 class qctma(object):
     """
@@ -281,9 +281,9 @@ class qctma(object):
                 # integration points for tetrahedron i.
                 return [interp(args[0][0][i], args[0][1][i], args[0][2][i]) for i in range(len(args[0][0]))]
 
-            scheme = qp.c3._witherden_vincent.witherden_vincent_11()  # Integration scheme
+            scheme = qp.c3.get_good_scheme(11)  # Integration scheme
         else:
-            scheme = qp.t3._witherden_vincent.witherden_vincent_10()  # Integration scheme
+            scheme = qp.t3.get_good_scheme(11)  # Integration scheme
 
         v1 = []  # List of the first vertex of each tetrahedron
         v2 = []  # List of the second vertex of each tetrahedron
@@ -336,11 +336,11 @@ class qctma(object):
         mat_max = np.max(self.e_elems)
         self.e_pool = []
         self.matid = np.zeros(len(self.e_elems))
-        while mat_max >= np.min(self.e_elems) and mat_max != -self.deltaE - 1:
+        while mat_max >= np.min(self.e_elems) and mat_max != -np.inf:
             max_elem_group_mask = self.e_elems >= mat_max - self.deltaE  # Elements within mat_max and mat_max-deltaE
             self.e_pool.append(np.mean(self.e_elems[max_elem_group_mask]))  # np.mean() or mat_max ?
             self.matid[max_elem_group_mask] = len(self.e_pool)
-            self.e_elems[max_elem_group_mask] = -self.deltaE - 1
+            self.e_elems[max_elem_group_mask] = -np.inf
             mat_max = np.max(self.e_elems)
 
     def inv_num(self, f, ys, init_guess=[0, 2], max_err=0.001):

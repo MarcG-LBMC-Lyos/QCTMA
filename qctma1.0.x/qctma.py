@@ -8,7 +8,6 @@ from copy import deepcopy
 from scipy.interpolate import NearestNDInterpolator
 import quadpy as qp
 import warnings
-from ansys.mapdl.reader import Archive
 import inspect
 
 import matplotlib.pyplot as plt
@@ -19,7 +18,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.9"
+__version__ = "1.0.10"
 
 class qctma(object):
     """
@@ -106,13 +105,11 @@ class qctma(object):
             return
         if self.mesh_path.lower().endswith(".cdb"):
             # Ansys mesh case
-            archive = Archive(self.mesh_path)
-            archive_elems = np.array(archive.elem)
-            self.elems = archive_elems[:, 8]
-            self.connection_array = archive_elems[:, 10:]
-            self.materials = np.array(archive.material_type)
-            self.nodes = np.array(range(1, len(archive.nodes)+1))
-            self.x, self.y, self.z = np.array(archive.nodes).T
+            elems, materials, nodes, x, y, z = read_cdbfile(self.mesh_path)
+            self.elems = elems[:, 0]
+            self.connection_array = elems[:, 1:]
+            self.nodes = nodes
+            self.x, self.y, self.z = x, y, z
 
     def load_dicom(self):
         """

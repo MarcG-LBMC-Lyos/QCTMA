@@ -18,3 +18,6 @@
 [1.0.9]
 - Changed fixed degree of gaussian quadrature to "get_good_scheme" function from quadpy.
 - Corrected "reduce_material" function to avoid inappropriate low density/E values (e.g. negative values).
+
+[1.0.10]
+- Removed pyansys package which caused installation issues.
