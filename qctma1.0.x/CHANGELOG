@@ -21,3 +21,6 @@
 
 [1.0.10]
 - Removed pyansys package which caused installation issues.
+
+[1.0.11]
+- Removed unnecessary packages from setuptool and requirements.
