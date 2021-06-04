@@ -1,7 +1,7 @@
 import numpy as np
 
 
-__version__ = "1.0.11"
+__version__ = "1.0.12"
 
 def read_cdbfile(path, type='Tet'):
     """

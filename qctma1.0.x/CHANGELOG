@@ -27,3 +27,7 @@
 
 [1.0.12]
 - Lowered versions of necessary packages for compatibility issues.
+
+[1.0.13]
+- Changed printing of occuring process.
+- Changed inv_num function to simplify it. Must be changed again in future for better generalization.

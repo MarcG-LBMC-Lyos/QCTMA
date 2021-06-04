@@ -18,7 +18,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.12"
+__version__ = "1.0.13"
 
 class qctma(object):
     """
@@ -313,8 +313,8 @@ class qctma(object):
                                                [np.min((v1[-1][2], v3[-1][2])), np.max((v1[-1][2], v3[-1][2]))])
                 v_cube.append(deepcopy(cube_point))
 
-            if not elem_arg % 100:
-                print("id %i:" % id, elem_arg, time.time() - t0)
+            if (not elem_arg % 100) and id == 0:
+                print("\rid %i:" % id, elem_arg, time.time() - t0, end="")
         # Integrating the Young's modulus over each element and dividing it by the volume of each element to get the mean.
         # Note: the function used to get the volume is x / x and not 1 in order to have the right shape in the end.
         if is_cube:
@@ -324,6 +324,8 @@ class qctma(object):
             elems_mat = scheme.integrate(f, (v1, v2, v3, v4)) / scheme.integrate(lambda x: x[0] / x[0],
                                                                                  (v1, v2, v3, v4))
 
+        if id == 0:
+            print("id %i:" % id, "DONE", time.time() - t0)
         save_list[id] = elems_mat  # Saving the results in the save_list param
 
     def reduce_material_nb(self):
@@ -362,21 +364,11 @@ class qctma(object):
                 x = np.linspace(*first_guess, nb_sample)
                 f_x = f(x)
                 diff = np.abs(f_x - y)
-                argmin = np.argmin(diff)
+                argmin = np.nanargmin(diff)
                 if delta <= max_err:
                     break
-                if argmin == len(x) - 1:
-                    first_guess[0] = 0
-                    if first_guess[1] == 0:
-                        first_guess[1] = 1
-                    first_guess[1] *= 2
-                elif argmin == 0:
-                    first_guess[1] = 0
-                    if first_guess[0] == 0:
-                        first_guess[0] = -1
-                    first_guess[0] *= 2
-                else:
-                    first_guess = [x[argmin] - delta, x[argmin] + delta]
+                # TODO: TAKE CARE OF VALUES THAT ARE OUTSIDE INIT_GUESS
+                first_guess = [x[argmin] - delta, x[argmin] + delta]
             inv_values.append(x[argmin])
 
         return inv_values
