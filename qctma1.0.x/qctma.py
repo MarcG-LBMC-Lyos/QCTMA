@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.14"
+__version__ = "1.0.15"
 
 class qctma(object):
     """
@@ -152,10 +152,6 @@ class qctma(object):
             self.image_mat[i] = d.pixel_array * d.RescaleSlope + d.RescaleIntercept
             self.positions_z[i] = float(ds[i].ImagePositionPatient[2])
 
-        # Smoothing the Dicoms
-        if self.gaussian_smoothing:
-            self.image_mat = gaussian_filter(self.image_mat, self.gaussian_smoothing)
-
         print("Volume created.\n")
 
     def convert2E(self):
@@ -164,6 +160,13 @@ class qctma(object):
         """
         print("E matrix creation...")
         density_mat = self.gl2density(self.image_mat)
+
+        # Smoothing the density
+        if self.gaussian_smoothing:
+            w = 3  # Window size (in pixel)
+            t = (((w - 1)/2)-0.5) / self.gaussian_smoothing
+            density_mat = gaussian_filter(density_mat, self.gaussian_smoothing, truncate=t)
+
         self.e_mat = self.density2E(density_mat)
         print("E matrix created.")
 

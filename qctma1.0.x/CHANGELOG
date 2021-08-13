@@ -34,3 +34,6 @@
 
 [1.0.14]
 - Added a gaussian filter option.
+
+[1.0.15]
+- Modified gaussian filter to be applied on the density matrix, with a window size of 3 pixels.
