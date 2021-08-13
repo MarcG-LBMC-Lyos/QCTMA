@@ -31,3 +31,6 @@
 [1.0.13]
 - Changed printing of occuring process.
 - Changed inv_num function to simplify it. Must be changed again in future for better generalization.
+
+[1.0.14]
+- Added a gaussian filter option.

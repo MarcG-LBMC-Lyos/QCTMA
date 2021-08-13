@@ -6,6 +6,7 @@ from multiprocessing import Process, Manager, cpu_count
 import os
 from copy import deepcopy
 from scipy.interpolate import NearestNDInterpolator
+from scipy.ndimage import gaussian_filter
 import quadpy as qp
 import warnings
 import inspect
@@ -18,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.13"
+__version__ = "1.0.14"
 
 class qctma(object):
     """
@@ -27,7 +28,7 @@ class qctma(object):
     """
 
     def __init__(self, dcm_path="", mesh_path="", gl2density=lambda x: x, density2E=lambda x: x, deltaE=0,
-                 process=False, save_mesh_path="", nb_process=1):
+                 process=False, save_mesh_path="", nb_process=1, gaussian_smoothing=0):
         """
         Constructs a qctma object from the Dicoms directory path, the original mesh file path, the gray level to density
         relation, the density to Young's modulus relation, and the Young's modulus delta step.
@@ -40,6 +41,7 @@ class qctma(object):
         :param process: If True, will process the data when instance is created.
         :param save_mesh_path: Path to the desired location of the final mesh.
         :param nb_process: Number of used process. if > 1, multiprocessing package will be used.
+        :param gaussian_smoothing: Sigma of the gaussian filter smoothing for the dicoms (0 means no gaussian smoothing)
         """
         self.dcm_path = dcm_path  # Path to the directory containing the Dicom files
         self.mesh_path = mesh_path  # Path to the mesh file
@@ -68,6 +70,9 @@ class qctma(object):
         self.e_mat = []  # 3D array of Young's modulus values corresponding to each voxel
         self.interpolator = None  # Interpolator Young's modulus = f(x, y, z)
         self.e_elems = []  # 1D array of Young's modulus of each element
+
+        # DICOM PROCESSING
+        self.gaussian_smoothing = gaussian_smoothing
 
         self.nb_process = nb_process  # Number of core for the parallelized process
         if self.nb_process > 1:
@@ -146,6 +151,10 @@ class qctma(object):
                 print("...")
             self.image_mat[i] = d.pixel_array * d.RescaleSlope + d.RescaleIntercept
             self.positions_z[i] = float(ds[i].ImagePositionPatient[2])
+
+        # Smoothing the Dicoms
+        if self.gaussian_smoothing:
+            self.image_mat = gaussian_filter(self.image_mat, self.gaussian_smoothing)
 
         print("Volume created.\n")
 
