@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.15"
+__version__ = "1.0.16"
 
 class qctma(object):
     """
@@ -28,7 +28,7 @@ class qctma(object):
     """
 
     def __init__(self, dcm_path="", mesh_path="", gl2density=lambda x: x, density2E=lambda x: x, deltaE=0,
-                 process=False, save_mesh_path="", nb_process=1, gaussian_smoothing=0):
+                 process=False, save_mesh_path="", nb_process=1, gaussian_smoothing=0, window_gaussian_smoothing=3):
         """
         Constructs a qctma object from the Dicoms directory path, the original mesh file path, the gray level to density
         relation, the density to Young's modulus relation, and the Young's modulus delta step.
@@ -42,6 +42,8 @@ class qctma(object):
         :param save_mesh_path: Path to the desired location of the final mesh.
         :param nb_process: Number of used process. if > 1, multiprocessing package will be used.
         :param gaussian_smoothing: Sigma of the gaussian filter smoothing for the dicoms (0 means no gaussian smoothing)
+        :param window_gaussian_smoothing: Window/kernel (number of pixels to take into account around each evaluated
+        pixel) for the gaussian filter smoothing (0 means infinit nb of pixel).
         """
         self.dcm_path = dcm_path  # Path to the directory containing the Dicom files
         self.mesh_path = mesh_path  # Path to the mesh file
@@ -73,6 +75,7 @@ class qctma(object):
 
         # DICOM PROCESSING
         self.gaussian_smoothing = gaussian_smoothing
+        self.window_gaussian_smoothing = window_gaussian_smoothing
 
         self.nb_process = nb_process  # Number of core for the parallelized process
         if self.nb_process > 1:
@@ -163,7 +166,7 @@ class qctma(object):
 
         # Smoothing the density
         if self.gaussian_smoothing:
-            w = 3  # Window size (in pixel)
+            w = self.window_gaussian_smoothing  # Window size (in pixel)
             t = (((w - 1)/2)-0.5) / self.gaussian_smoothing
             density_mat = gaussian_filter(density_mat, self.gaussian_smoothing, truncate=t)
 
