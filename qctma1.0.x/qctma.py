@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.16"
+__version__ = "1.0.17"
 
 class qctma(object):
     """
@@ -28,7 +28,8 @@ class qctma(object):
     """
 
     def __init__(self, dcm_path="", mesh_path="", gl2density=lambda x: x, density2E=lambda x: x, deltaE=0,
-                 process=False, save_mesh_path="", nb_process=1, gaussian_smoothing=0, window_gaussian_smoothing=3):
+                 process=False, save_mesh_path="", nb_process=1, gaussian_smoothing=0, window_gaussian_smoothing=3,
+                 exclude_elems_array=None):
         """
         Constructs a qctma object from the Dicoms directory path, the original mesh file path, the gray level to density
         relation, the density to Young's modulus relation, and the Young's modulus delta step.
@@ -43,7 +44,8 @@ class qctma(object):
         :param nb_process: Number of used process. if > 1, multiprocessing package will be used.
         :param gaussian_smoothing: Sigma of the gaussian filter smoothing for the dicoms (0 means no gaussian smoothing)
         :param window_gaussian_smoothing: Window/kernel (number of pixels to take into account around each evaluated
-        pixel) for the gaussian filter smoothing (0 means infinit nb of pixel).
+        :param exclude_elems_array: Array of element numbers to assign an empty material.
+        pixel) for the gaussian filter smoothing.
         """
         self.dcm_path = dcm_path  # Path to the directory containing the Dicom files
         self.mesh_path = mesh_path  # Path to the mesh file
@@ -72,6 +74,7 @@ class qctma(object):
         self.e_mat = []  # 3D array of Young's modulus values corresponding to each voxel
         self.interpolator = None  # Interpolator Young's modulus = f(x, y, z)
         self.e_elems = []  # 1D array of Young's modulus of each element
+        self.exclude_elems_array = exclude_elems_array
 
         # DICOM PROCESSING
         self.gaussian_smoothing = gaussian_smoothing
@@ -208,7 +211,9 @@ class qctma(object):
 
         # Creating the interpolation function based on the coordinates and the associated values.
         # Could be a custom function as long as it maps every points of the space to a Young's modulus value.
+        print("Creating interpolator...")
         self.interpolator = NearestNDInterpolator(coords, val)
+        print("Interpolator created.")
 
     def pixel_location_from_coord(self, x, y, z, positions_x, positions_y, positions_z):
         """
@@ -351,11 +356,19 @@ class qctma(object):
         self.e_pool = []
         self.matid = np.zeros(len(self.e_elems))
         while mat_max >= np.min(self.e_elems) and mat_max != -np.inf:
-            max_elem_group_mask = self.e_elems >= mat_max - self.deltaE  # Elements within mat_max and mat_max-deltaE
+            max_elem_group_mask = self.e_elems >= (mat_max - self.deltaE)  # Elements within mat_max and mat_max-deltaE
             self.e_pool.append(np.mean(self.e_elems[max_elem_group_mask]))  # np.mean() or mat_max ?
             self.matid[max_elem_group_mask] = len(self.e_pool)
             self.e_elems[max_elem_group_mask] = -np.inf
             mat_max = np.max(self.e_elems)
+
+        # Assign empty material to exclude_elems_array elements
+        if self.exclude_elems_array:
+            mask_exclude_elems = np.zeros(self.matid)
+            mask_exclude_elems[self.exclude_elems_array] = 1
+            mask_exclude_elems = mask_exclude_elems.astype(bool)
+            self.matid[mask_exclude_elems] = len(self.e_pool) + 1
+            self.e_pool.append(0.0)
 
     def inv_num(self, f, ys, init_guess=[0, 2], max_err=0.001):
         """
@@ -449,7 +462,7 @@ class qctma(object):
             content.append(Spacer(1, 12))
 
             plt.figure(figsize=(5.31, 3))
-            rho = np.linspace(np.min(self.e_mat), np.max(self.e_mat), 100)
+            # rho = np.linspace(np.min(self.e_mat), np.max(self.e_mat), 100)
             e = self.density2E(rho)
             plt.plot(rho, e, '-')
             plt.xlabel('Density')

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-__version__ = "1.0.16"
+__version__ = "1.0.17"
 
 def read_cdbfile(path, type='Tet'):
     """
@@ -135,9 +135,12 @@ def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool)
             # Open the mesh_file_path file to extract the table of connection and the table of coordinates.
             extract_elems = False
             extract_mat = False
+            FIRST_ELEM_ID = -1
             line = f.readline()
             while line:
                 if extract_elems:
+                    if FIRST_ELEM_ID == -1:
+                        FIRST_ELEM_ID = int(line[ELEM_START * ELEM_LEN:(ELEM_START + 1) * ELEM_LEN])
                     if line.find("-1") != -1:
                         extract_elems = False
                         extract_mat = True
@@ -145,7 +148,7 @@ def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool)
                         continue
 
                     elem = int(line[ELEM_START * ELEM_LEN:(ELEM_START + 1) * ELEM_LEN])
-                    mat_nb = int(matid[elem - 1])
+                    mat_nb = int(matid[elem - FIRST_ELEM_ID - 1])
                     line = "{:{width}}".format(mat_nb, width=ELEM_LEN) + line[ELEM_LEN:]
 
                     f_out.write(line)

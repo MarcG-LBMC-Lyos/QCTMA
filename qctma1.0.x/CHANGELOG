@@ -40,3 +40,6 @@
 
 [1.0.16]
 - Added a window/kernel option for the Gaussian filter.
+
+[1.0.17]
+- Added option to exclude elements from material assignment and create an "empty" material for them.
