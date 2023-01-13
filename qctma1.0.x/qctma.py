@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.17.1"
+__version__ = "1.0.17.2"
 
 class qctma(object):
     """
@@ -364,7 +364,7 @@ class qctma(object):
 
         # Assign empty material to exclude_elems_array elements
         if self.exclude_elems_array is not None:
-            mask_exclude_elems = np.zeros(self.matid)
+            mask_exclude_elems = np.zeros(len(self.matid))
             mask_exclude_elems[self.exclude_elems_array] = 1
             mask_exclude_elems = mask_exclude_elems.astype(bool)
             self.matid[mask_exclude_elems] = len(self.e_pool) + 1
