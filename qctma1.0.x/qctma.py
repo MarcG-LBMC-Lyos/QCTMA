@@ -363,7 +363,7 @@ class qctma(object):
             mat_max = np.max(self.e_elems)
 
         # Assign empty material to exclude_elems_array elements
-        if self.exclude_elems_array:
+        if self.exclude_elems_array is not None:
             mask_exclude_elems = np.zeros(self.matid)
             mask_exclude_elems[self.exclude_elems_array] = 1
             mask_exclude_elems = mask_exclude_elems.astype(bool)
