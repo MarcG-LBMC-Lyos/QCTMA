@@ -4,3 +4,4 @@ pydicom>=2.1.2
 quadpy>=0.16.5
 scipy>=1.5.4
 reportlab>=3.5.66
+nibabel

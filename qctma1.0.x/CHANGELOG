@@ -43,3 +43,6 @@
 
 [1.0.17]
 - Added option to exclude elements from material assignment and create an "empty" material for them.
+
+[1.0.18]
+- Added nifti reading

@@ -10,6 +10,7 @@ from scipy.ndimage import gaussian_filter
 import quadpy as qp
 import warnings
 import inspect
+import nibabel as nib
 
 import matplotlib.pyplot as plt
 from reportlab.lib.enums import TA_JUSTIFY
@@ -19,7 +20,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.17.2"
+__version__ = "1.0.18"
 
 class qctma(object):
     """
@@ -126,37 +127,76 @@ class qctma(object):
         """
         Load the data in the Dicoms and extract the Dicom related parameters.
         """
-        print("Reading dicom files...")
-        ds = []  # List of dicoms
-        for i, file in enumerate(os.listdir(self.dcm_path)):
-            if i % 100 == 0:
-                print(file)
-            ds.append(dcm.dcmread(os.path.join(self.dcm_path, file)))
-            if i % 100 == 0:
-                print("...")
+        if self.dcm_path.endswith(".nii.gz"):
+            print("Reading nifti files...")
+            scan = nib.load(self.dcm_path)
+            array = scan.get_fdata()
+            scanHeader = scan.header
+            pixDim = scanHeader['pixdim'][1:4]
+            dim = scanHeader['dim'][1:4]
 
-        print("Dicom reading done.\n")
+            origin = np.array([scanHeader['qoffset_x'], scanHeader['qoffset_y'], scanHeader['qoffset_z']])
+            sizes = dim
+            print("nifti reading done.\n")
+            print("Converting nifti into volume")
+            volume = np.array(array)  # Pixel values
 
-        # MAKING 3D MATRIX OF DICOMS AND 3D MATRIX OF POSITION OF VOXEL
-        print("Converting Dicoms into volume")
-        self.image_mat = np.zeros((len(ds), len(ds[0].pixel_array), len(ds[0].pixel_array[0])))  # Pixel values
+            # Extracting constant values along each slice of the dicom
+            orientation_x, orientation_y, orientation_z = np.array(pixDim)  # orientation (sign) and voxel size (value)
+            orig_x, orig_y, orig_z = float(origin[0]), float(origin[1]), float(origin[2])
 
-        # Extracting constant values along each slice of the dicom
-        spacing_x, spacing_y = float(ds[0].PixelSpacing[0]), float(ds[0].PixelSpacing[1])
-        orientation_x, orientation_y = float(ds[0].ImageOrientationPatient[0]), float(ds[0].ImageOrientationPatient[4])
-        orig_x, orig_y, orig_z = float(ds[0].ImagePositionPatient[0]), float(ds[0].ImagePositionPatient[1]), float(
-            ds[0].ImagePositionPatient[2])
+            self.positions_x = orig_x + orientation_x * np.array(range(sizes[0]))
+            self.positions_y = orig_y + orientation_y * np.array(range(sizes[1]))
+            self.positions_z = orig_z + orientation_z * np.array(range(sizes[2]))
 
-        self.positions_x = orig_x + orientation_x * spacing_x * np.array(range(len(ds[0].pixel_array[0])))
-        self.positions_y = orig_y + orientation_y * spacing_y * np.array(range(len(ds[0].pixel_array)))
-        self.positions_z = np.zeros((len(ds)))
+            orientation = np.sign([orientation_x, orientation_y, orientation_z])
+            dimensions = np.array(sizes) + 1
+            spacing = np.abs([orientation_x, orientation_y, orientation_z])
+            origin = [orig_x, orig_y, orig_z]
+            # Rectifying orientation and origin of the volume if dicom's orientation is negative
+            if orientation[0] < 0:
+                volume = np.flip(volume, axis=0)
+                origin[0] -= dimensions[0] * spacing[0]
+            if orientation[1] < 0:
+                volume = np.flip(volume, axis=1)
+                origin[1] -= dimensions[1] * spacing[1]
+            if orientation[2] < 0:
+                volume = np.flip(volume, axis=2)
 
-        # Extracting the image in each slice and the corresponding Z coordinate (which might not be linear).
-        for i, d in enumerate(ds):
-            if i % 100 == 0:
-                print("...")
-            self.image_mat[i] = d.pixel_array * d.RescaleSlope + d.RescaleIntercept
-            self.positions_z[i] = float(ds[i].ImagePositionPatient[2])
+            self.image_mat = np.transpose(volume)
+        else:
+            print("Reading dicom files...")
+            ds = []  # List of dicoms
+            for i, file in enumerate(os.listdir(self.dcm_path)):
+                if i % 100 == 0:
+                    print(file)
+                ds.append(dcm.dcmread(os.path.join(self.dcm_path, file)))
+                if i % 100 == 0:
+                    print("...")
+
+            print("Dicom reading done.\n")
+
+            # MAKING 3D MATRIX OF DICOMS AND 3D MATRIX OF POSITION OF VOXEL
+            print("Converting Dicoms into volume")
+            self.image_mat = np.zeros((len(ds), len(ds[0].pixel_array), len(ds[0].pixel_array[0])))  # Pixel values
+
+            # Extracting constant values along each slice of the dicom
+            spacing_x, spacing_y = float(ds[0].PixelSpacing[0]), float(ds[0].PixelSpacing[1])
+            orientation_x, orientation_y = float(ds[0].ImageOrientationPatient[0]), float(
+                ds[0].ImageOrientationPatient[4])
+            orig_x, orig_y, orig_z = float(ds[0].ImagePositionPatient[0]), float(ds[0].ImagePositionPatient[1]), float(
+                ds[0].ImagePositionPatient[2])
+
+            self.positions_x = orig_x + orientation_x * spacing_x * np.array(range(len(ds[0].pixel_array[0])))
+            self.positions_y = orig_y + orientation_y * spacing_y * np.array(range(len(ds[0].pixel_array)))
+            self.positions_z = np.zeros((len(ds)))
+
+            # Extracting the image in each slice and the corresponding Z coordinate (which might not be linear).
+            for i, d in enumerate(ds):
+                if i % 100 == 0:
+                    print("...")
+                self.image_mat[i] = d.pixel_array * d.RescaleSlope + d.RescaleIntercept
+                self.positions_z[i] = float(ds[i].ImagePositionPatient[2])
 
         print("Volume created.\n")
 
@@ -365,7 +405,7 @@ class qctma(object):
         # Assign empty material to exclude_elems_array elements
         if self.exclude_elems_array is not None:
             mask_exclude_elems = np.zeros(len(self.matid))
-            mask_exclude_elems[self.exclude_elems_array] = 1
+            mask_exclude_elems[self.exclude_elems_array.astype(int)] = 1
             mask_exclude_elems = mask_exclude_elems.astype(bool)
             self.matid[mask_exclude_elems] = len(self.e_pool) + 1
             self.e_pool.append(0.0)

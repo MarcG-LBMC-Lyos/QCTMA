@@ -1,7 +1,7 @@
 import numpy as np
 
 
-__version__ = "1.0.17.2"
+__version__ = "1.0.18"
 
 def read_cdbfile(path, type='Tet'):
     """
@@ -148,7 +148,7 @@ def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool)
                         continue
 
                     elem = int(line[ELEM_START * ELEM_LEN:(ELEM_START + 1) * ELEM_LEN])
-                    mat_nb = int(matid[elem - FIRST_ELEM_ID - 1])
+                    mat_nb = int(matid[elem - FIRST_ELEM_ID])
                     line = "{:{width}}".format(mat_nb, width=ELEM_LEN) + line[ELEM_LEN:]
 
                     f_out.write(line)
