@@ -7,7 +7,6 @@ import os
 from copy import deepcopy
 from scipy.interpolate import NearestNDInterpolator
 from scipy.ndimage import gaussian_filter
-import quadpy as qp
 import warnings
 import inspect
 import nibabel as nib
@@ -20,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.18"
+__version__ = "1.0.19"
 
 class qctma(object):
     """
@@ -309,6 +308,7 @@ class qctma(object):
         :param save_list: Persistent list where the integration of each element will be stored.
         :param id: ID of the process.
         """
+        import quadpy as qp
 
         t0 = time.time()
 

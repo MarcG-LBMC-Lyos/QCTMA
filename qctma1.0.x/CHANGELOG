@@ -45,4 +45,7 @@
 - Added option to exclude elements from material assignment and create an "empty" material for them.
 
 [1.0.18]
-- Added nifti reading
+- Added nifti reading.
+
+[1.0.19]
+- Changed import of pyquad from header to the function that used it.
