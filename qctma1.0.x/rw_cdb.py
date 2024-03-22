@@ -121,13 +121,14 @@ def get_nu(path):
                     nu.append(float(line.split(',')[-2]))
     return np.array(nu)
 
-def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool):
+def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool, plastic_pool=None):
     """
     Write a new CDB mesh file based on a source CDB file, with materials defined assigned to each element.
     :param save_mesh_path: Path to the CDB mesh file that will be saved.
     :param matid: Material number assigned to each element
     :param e_pool: Pool of Young's modulus
     :param density_pool: Pool of density
+    :param plastic_pool: Pool of tuple (yield strength, plastic modulus)
     :return: None.
     """
     with open(source_mesh_path, 'r') as f:
@@ -165,6 +166,10 @@ def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool)
                         f_out.write("MPDATA,R5.0, 1,NUXY,%6i, 1, %.8f    ,\n" % (i + 1, 0.3))
                         f_out.write("MPTEMP,R5.0, 1, 1,  0.00000000    ,\n")
                         f_out.write("MPDATA,R5.0, 1,DENS,%6i, 1, %.8f    ,\n" % (i + 1, density_pool[i]))
+                        if plastic_pool is not None:
+                            f_out.write(f"TB,BISO,{i+1},   1\n")
+                            f_out.write(f"TBTEM,  0.00000000    ,   1\n")
+                            f_out.write(f"TBDAT,      1,{plastic_pool[i][0]}, {plastic_pool[i][1]},\n")
                     f_out.write("\n")
                     f_out.write("/GO\n")
                     f_out.write("FINISH\n")
