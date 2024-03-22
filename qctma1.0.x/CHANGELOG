@@ -49,3 +49,6 @@
 
 [1.0.19]
 - Changed import of pyquad from header to the function that used it.
+
+[1.0.20]
+- Added the possibility to use a function to define a plastic (bilinear) material law.
