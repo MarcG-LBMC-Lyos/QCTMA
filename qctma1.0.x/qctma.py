@@ -29,7 +29,7 @@ class qctma(object):
 
     def __init__(self, dcm_path="", mesh_path="", gl2density=lambda x: x, density2E=lambda x: x, deltaE=0,
                  process=False, save_mesh_path="", nb_process=1, gaussian_smoothing=0, window_gaussian_smoothing=3,
-                 exclude_elems_array=None):
+                 exclude_elems_array=None, E2plastic_params=None):
         """
         Constructs a qctma object from the Dicoms directory path, the original mesh file path, the gray level to density
         relation, the density to Young's modulus relation, and the Young's modulus delta step.
@@ -46,7 +46,12 @@ class qctma(object):
         :param window_gaussian_smoothing: Window/kernel (number of pixels to take into account around each evaluated
         :param exclude_elems_array: Array of element numbers to assign an empty material.
         pixel) for the gaussian filter smoothing.
+        :param E2plastic_params: Function that gives a tuple (yield_strength, plastic modulus) in function of the
+        Young's modulus E.
         """
+        if not os.path.isdir(dcm_path):
+            if dcm_path.lower().endswith(".dcm"):
+                dcm_path = os.path.split(dcm_path)[0]
         self.dcm_path = dcm_path  # Path to the directory containing the Dicom files
         self.mesh_path = mesh_path  # Path to the mesh file
         self.gl2density = gl2density  # Function transforming gray level 3D array to density 3D array
@@ -75,6 +80,7 @@ class qctma(object):
         self.interpolator = None  # Interpolator Young's modulus = f(x, y, z)
         self.e_elems = []  # 1D array of Young's modulus of each element
         self.exclude_elems_array = exclude_elems_array
+        self.E2plastic_params = E2plastic_params
 
         # DICOM PROCESSING
         self.gaussian_smoothing = gaussian_smoothing
@@ -454,7 +460,12 @@ class qctma(object):
         if save_mesh_path == "":
             save_mesh_path = os.path.splitext(self.mesh_path)[0] + "_QCTMA.cdb"
         if save_mesh_path.lower().endswith(".cdb"):
-            write_cdb_mat(self.mesh_path, save_mesh_path, self.matid, self.e_pool, self.density_pool)
+            if self.E2plastic_params is not None:
+                plastic_pool = []
+                for E in self.e_pool:
+                    plastic_pool.append(self.E2plastic_params(E))
+            write_cdb_mat(self.mesh_path, save_mesh_path, self.matid, self.e_pool, self.density_pool,
+                          plastic_pool=plastic_pool)
         else:
             warnings.warn("WARNING: Extension of the desired save path of the mesh not recognized. Unable to save the Mesh.")
 
