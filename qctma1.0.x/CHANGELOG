@@ -52,3 +52,12 @@
 
 [1.0.20]
 - Added the possibility to use a function to define a plastic (bilinear) material law.
+
+[1.0.21]
+- Corrected the eventuality of having a negative density even though graylevel2density function is supposed to avoid it.
+
+[1.0.22]
+- Corrected initialization of plastic_pool when saving mesh.
+
+[1.0.23]
+- Corrected the eventuality of having a wrong ordering of the dicom slices (force ordering by slice position).

@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.20"
+__version__ = "1.0.23"
 
 class qctma(object):
     """
@@ -202,6 +202,11 @@ class qctma(object):
                     print("...")
                 self.image_mat[i] = d.pixel_array * d.RescaleSlope + d.RescaleIntercept
                 self.positions_z[i] = float(ds[i].ImagePositionPatient[2])
+            order = np.argsort(self.positions_z)
+            self.image_mat = np.array(self.image_mat)[order]
+            self.positions_z = np.array(self.positions_z)[order]
+            self.positions_y = np.array(self.positions_y)[order]
+            self.positions_x = np.array(self.positions_x)[order]
 
         print("Volume created.\n")
 
@@ -449,6 +454,8 @@ class qctma(object):
 
     def e_pool2density(self):
         self.density_pool = self.inv_num(self.density2E, self.e_pool)
+        self.density_pool = np.array(self.density_pool)
+        self.density_pool[self.density_pool <= 0.0001] = min(0.0001, np.min(np.abs(self.density_pool)))
 
     def save_mesh(self, save_mesh_path, report=True):
         """
@@ -460,6 +467,7 @@ class qctma(object):
         if save_mesh_path == "":
             save_mesh_path = os.path.splitext(self.mesh_path)[0] + "_QCTMA.cdb"
         if save_mesh_path.lower().endswith(".cdb"):
+            plastic_pool = None
             if self.E2plastic_params is not None:
                 plastic_pool = []
                 for E in self.e_pool:
