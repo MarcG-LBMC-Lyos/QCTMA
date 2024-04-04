@@ -205,8 +205,6 @@ class qctma(object):
             order = np.argsort(self.positions_z)
             self.image_mat = np.array(self.image_mat)[order]
             self.positions_z = np.array(self.positions_z)[order]
-            self.positions_y = np.array(self.positions_y)[order]
-            self.positions_x = np.array(self.positions_x)[order]
 
         print("Volume created.\n")
 
