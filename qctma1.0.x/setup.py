@@ -12,7 +12,7 @@ setup(name='qctma',
       author_email='m.gardegaront@gmail.com',
       license='GNU GPLv3',
       py_modules=['qctma', 'rw_cdb'],
-      install_requires=['matplotlib>=2.2.5', 'numpy>=1.19.5', 'pydicom>=2.1.2', 'quadpy>=0.16.5', 'scipy>=1.5.4',
+      install_requires=['matplotlib>=2.2.5', 'numpy>=1.19.5', 'pydicom>=2.1.2', 'scipy>=1.5.4',
                         'reportlab>=3.5.66'
                         ],
       python_requires=">=3.6")
