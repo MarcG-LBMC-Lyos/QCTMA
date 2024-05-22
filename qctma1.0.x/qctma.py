@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.23"
+__version__ = "1.0.24"
 
 class qctma(object):
     """
@@ -317,7 +317,7 @@ class qctma(object):
         :param save_list: Persistent list where the integration of each element will be stored.
         :param id: ID of the process.
         """
-        import quadpy as qp
+        from gauss_integ import quadpy as qp
 
         t0 = time.time()
 

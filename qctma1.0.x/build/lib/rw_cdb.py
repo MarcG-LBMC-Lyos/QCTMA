@@ -1,7 +1,7 @@
 import numpy as np
 
 
-__version__ = "1.0.16"
+__version__ = "1.0.24"
 
 def read_cdbfile(path, type='Tet'):
     """
@@ -121,13 +121,14 @@ def get_nu(path):
                     nu.append(float(line.split(',')[-2]))
     return np.array(nu)
 
-def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool):
+def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool, plastic_pool=None):
     """
     Write a new CDB mesh file based on a source CDB file, with materials defined assigned to each element.
     :param save_mesh_path: Path to the CDB mesh file that will be saved.
     :param matid: Material number assigned to each element
     :param e_pool: Pool of Young's modulus
     :param density_pool: Pool of density
+    :param plastic_pool: Pool of tuple (yield strength, plastic modulus)
     :return: None.
     """
     with open(source_mesh_path, 'r') as f:
@@ -135,9 +136,12 @@ def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool)
             # Open the mesh_file_path file to extract the table of connection and the table of coordinates.
             extract_elems = False
             extract_mat = False
+            FIRST_ELEM_ID = -1
             line = f.readline()
             while line:
                 if extract_elems:
+                    if FIRST_ELEM_ID == -1:
+                        FIRST_ELEM_ID = int(line[ELEM_START * ELEM_LEN:(ELEM_START + 1) * ELEM_LEN])
                     if line.find("-1") != -1:
                         extract_elems = False
                         extract_mat = True
@@ -145,7 +149,7 @@ def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool)
                         continue
 
                     elem = int(line[ELEM_START * ELEM_LEN:(ELEM_START + 1) * ELEM_LEN])
-                    mat_nb = int(matid[elem - 1])
+                    mat_nb = int(matid[elem - FIRST_ELEM_ID])
                     line = "{:{width}}".format(mat_nb, width=ELEM_LEN) + line[ELEM_LEN:]
 
                     f_out.write(line)
@@ -162,6 +166,10 @@ def write_cdb_mat(source_mesh_path, save_mesh_path, matid, e_pool, density_pool)
                         f_out.write("MPDATA,R5.0, 1,NUXY,%6i, 1, %.8f    ,\n" % (i + 1, 0.3))
                         f_out.write("MPTEMP,R5.0, 1, 1,  0.00000000    ,\n")
                         f_out.write("MPDATA,R5.0, 1,DENS,%6i, 1, %.8f    ,\n" % (i + 1, density_pool[i]))
+                        if plastic_pool is not None:
+                            f_out.write(f"TB,BISO,{i+1},   1\n")
+                            f_out.write(f"TBTEM,  0.00000000    ,   1\n")
+                            f_out.write(f"TBDAT,      1,{plastic_pool[i][0]}, {plastic_pool[i][1]},\n")
                     f_out.write("\n")
                     f_out.write("/GO\n")
                     f_out.write("FINISH\n")
