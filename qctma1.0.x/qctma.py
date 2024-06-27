@@ -178,6 +178,8 @@ class qctma(object):
                 ds.append(dcm.dcmread(os.path.join(self.dcm_path, file)))
                 if i % 100 == 0:
                     print("...")
+            # Sorting the dicoms
+            ds = sorted(ds, key=lambda x: float(x.ImagePositionPatient[2]))
 
             print("Dicom reading done.\n")
 
