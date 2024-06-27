@@ -64,3 +64,6 @@
 
 [1.0.24]
 - Removed dependency requiring a licence.
+
+[1.0.25]
+- Corrected the eventuality of having a wrong ordering of the dicom slices (force ordering by slice position).
