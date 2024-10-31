@@ -31,7 +31,10 @@ def read_cdbfile(path, type='Tet'):
                 nodes.append(int(line[:NODE_LEN]))
                 x.append(float(line[NODE_PROPERTIES_NB * NODE_LEN:3 * NODE_LEN + COORD_LEN]))
                 y.append(float(line[NODE_PROPERTIES_NB * NODE_LEN + COORD_LEN:3 * NODE_LEN + COORD_LEN * 2]))
-                z.append(float(line[NODE_PROPERTIES_NB * NODE_LEN + COORD_LEN * 2:3 * NODE_LEN + COORD_LEN * 3]))
+                try:
+                    z.append(float(line[NODE_PROPERTIES_NB * NODE_LEN + COORD_LEN * 2:3 * NODE_LEN + COORD_LEN * 3]))
+                except ValueError:
+                    z.append(0)
                 line = f.readline()
                 continue
             if extract_elems:
