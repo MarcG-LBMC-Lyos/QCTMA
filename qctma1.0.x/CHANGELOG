@@ -67,3 +67,6 @@
 
 [1.0.25]
 - Corrected the eventuality of having a wrong ordering of the dicom slices (force ordering by slice position).
+
+[1.0.26]
+- Added an exception to support the case where Ansys does not input 0 for the z coordinate when it's the case.
