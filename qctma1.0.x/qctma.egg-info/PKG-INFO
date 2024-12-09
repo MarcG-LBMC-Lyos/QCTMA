@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: qctma
-Version: 1.0.22
+Version: 1.0.24
 Summary: Injects material (Young's modulus) to each element, based on a Dicom stack, and gray level to Young'smodulus relationships. Specifically designed to be used with Ansys .cdb meshes.
 Home-page: https://github.com/MarcG-LBMC-Lyos/QCTMA
 Author: Marc Gardegaront
@@ -10,7 +10,6 @@ Requires-Python: >=3.6
 Requires-Dist: matplotlib>=2.2.5
 Requires-Dist: numpy>=1.19.5
 Requires-Dist: pydicom>=2.1.2
-Requires-Dist: quadpy>=0.16.5
 Requires-Dist: scipy>=1.5.4
 Requires-Dist: reportlab>=3.5.66
 

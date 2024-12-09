@@ -1,9 +1,9 @@
 import numpy as np
 
 
-__version__ = "1.0.23"
+__version__ = "1.0.26"
 
-def read_cdbfile(path, type='Tet'):
+def read_cdbfile(path, exclude_elems_array=None, type='Tet'):
     """
     Extract the elements number and their associated material from a cdb mesh file.
     :param path: Path to the cdb file.
@@ -31,7 +31,10 @@ def read_cdbfile(path, type='Tet'):
                 nodes.append(int(line[:NODE_LEN]))
                 x.append(float(line[NODE_PROPERTIES_NB * NODE_LEN:3 * NODE_LEN + COORD_LEN]))
                 y.append(float(line[NODE_PROPERTIES_NB * NODE_LEN + COORD_LEN:3 * NODE_LEN + COORD_LEN * 2]))
-                z.append(float(line[NODE_PROPERTIES_NB * NODE_LEN + COORD_LEN * 2:3 * NODE_LEN + COORD_LEN * 3]))
+                try:
+                    z.append(float(line[NODE_PROPERTIES_NB * NODE_LEN + COORD_LEN * 2:3 * NODE_LEN + COORD_LEN * 3]))
+                except ValueError:
+                    z.append(0)
                 line = f.readline()
                 continue
             if extract_elems:
@@ -82,6 +85,13 @@ def read_cdbfile(path, type='Tet'):
     x = np.array(x)
     y = np.array(y)
     z = np.array(z)
+
+    if exclude_elems_array is not None:
+        mask_exclude_elems = np.zeros(len(elems))
+        mask_exclude_elems[exclude_elems_array.astype(int)] = 1
+        mask_exclude_elems = mask_exclude_elems.astype(bool)
+        elems = elems[~mask_exclude_elems]
+        materials = materials[~mask_exclude_elems]
 
     return elems, materials, nodes, x, y, z
 

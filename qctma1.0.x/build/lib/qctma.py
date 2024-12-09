@@ -7,9 +7,9 @@ import os
 from copy import deepcopy
 from scipy.interpolate import NearestNDInterpolator
 from scipy.ndimage import gaussian_filter
-import quadpy as qp
 import warnings
 import inspect
+import nibabel as nib
 
 import matplotlib.pyplot as plt
 from reportlab.lib.enums import TA_JUSTIFY
@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.16"
+__version__ = "1.0.26"
 
 class qctma(object):
     """
@@ -28,7 +28,8 @@ class qctma(object):
     """
 
     def __init__(self, dcm_path="", mesh_path="", gl2density=lambda x: x, density2E=lambda x: x, deltaE=0,
-                 process=False, save_mesh_path="", nb_process=1, gaussian_smoothing=0, window_gaussian_smoothing=3):
+                 process=False, save_mesh_path="", nb_process=1, gaussian_smoothing=0, window_gaussian_smoothing=3,
+                 exclude_elems_array=None, E2plastic_params=None):
         """
         Constructs a qctma object from the Dicoms directory path, the original mesh file path, the gray level to density
         relation, the density to Young's modulus relation, and the Young's modulus delta step.
@@ -43,8 +44,14 @@ class qctma(object):
         :param nb_process: Number of used process. if > 1, multiprocessing package will be used.
         :param gaussian_smoothing: Sigma of the gaussian filter smoothing for the dicoms (0 means no gaussian smoothing)
         :param window_gaussian_smoothing: Window/kernel (number of pixels to take into account around each evaluated
-        pixel) for the gaussian filter smoothing (0 means infinit nb of pixel).
+        :param exclude_elems_array: Array of element numbers to assign an empty material.
+        pixel) for the gaussian filter smoothing.
+        :param E2plastic_params: Function that gives a tuple (yield_strength, plastic modulus) in function of the
+        Young's modulus E.
         """
+        if not os.path.isdir(dcm_path):
+            if dcm_path.lower().endswith(".dcm"):
+                dcm_path = os.path.split(dcm_path)[0]
         self.dcm_path = dcm_path  # Path to the directory containing the Dicom files
         self.mesh_path = mesh_path  # Path to the mesh file
         self.gl2density = gl2density  # Function transforming gray level 3D array to density 3D array
@@ -72,6 +79,8 @@ class qctma(object):
         self.e_mat = []  # 3D array of Young's modulus values corresponding to each voxel
         self.interpolator = None  # Interpolator Young's modulus = f(x, y, z)
         self.e_elems = []  # 1D array of Young's modulus of each element
+        self.exclude_elems_array = exclude_elems_array
+        self.E2plastic_params = E2plastic_params
 
         # DICOM PROCESSING
         self.gaussian_smoothing = gaussian_smoothing
@@ -123,37 +132,81 @@ class qctma(object):
         """
         Load the data in the Dicoms and extract the Dicom related parameters.
         """
-        print("Reading dicom files...")
-        ds = []  # List of dicoms
-        for i, file in enumerate(os.listdir(self.dcm_path)):
-            if i % 100 == 0:
-                print(file)
-            ds.append(dcm.dcmread(os.path.join(self.dcm_path, file)))
-            if i % 100 == 0:
-                print("...")
+        if self.dcm_path.endswith(".nii.gz"):
+            print("Reading nifti files...")
+            scan = nib.load(self.dcm_path)
+            array = scan.get_fdata()
+            scanHeader = scan.header
+            pixDim = scanHeader['pixdim'][1:4]
+            dim = scanHeader['dim'][1:4]
 
-        print("Dicom reading done.\n")
+            origin = np.array([scanHeader['qoffset_x'], scanHeader['qoffset_y'], scanHeader['qoffset_z']])
+            sizes = dim
+            print("nifti reading done.\n")
+            print("Converting nifti into volume")
+            volume = np.array(array)  # Pixel values
 
-        # MAKING 3D MATRIX OF DICOMS AND 3D MATRIX OF POSITION OF VOXEL
-        print("Converting Dicoms into volume")
-        self.image_mat = np.zeros((len(ds), len(ds[0].pixel_array), len(ds[0].pixel_array[0])))  # Pixel values
+            # Extracting constant values along each slice of the dicom
+            orientation_x, orientation_y, orientation_z = np.array(pixDim)  # orientation (sign) and voxel size (value)
+            orig_x, orig_y, orig_z = float(origin[0]), float(origin[1]), float(origin[2])
 
-        # Extracting constant values along each slice of the dicom
-        spacing_x, spacing_y = float(ds[0].PixelSpacing[0]), float(ds[0].PixelSpacing[1])
-        orientation_x, orientation_y = float(ds[0].ImageOrientationPatient[0]), float(ds[0].ImageOrientationPatient[4])
-        orig_x, orig_y, orig_z = float(ds[0].ImagePositionPatient[0]), float(ds[0].ImagePositionPatient[1]), float(
-            ds[0].ImagePositionPatient[2])
+            self.positions_x = orig_x + orientation_x * np.array(range(sizes[0]))
+            self.positions_y = orig_y + orientation_y * np.array(range(sizes[1]))
+            self.positions_z = orig_z + orientation_z * np.array(range(sizes[2]))
 
-        self.positions_x = orig_x + orientation_x * spacing_x * np.array(range(len(ds[0].pixel_array[0])))
-        self.positions_y = orig_y + orientation_y * spacing_y * np.array(range(len(ds[0].pixel_array)))
-        self.positions_z = np.zeros((len(ds)))
+            orientation = np.sign([orientation_x, orientation_y, orientation_z])
+            dimensions = np.array(sizes) + 1
+            spacing = np.abs([orientation_x, orientation_y, orientation_z])
+            origin = [orig_x, orig_y, orig_z]
+            # Rectifying orientation and origin of the volume if dicom's orientation is negative
+            if orientation[0] < 0:
+                volume = np.flip(volume, axis=0)
+                origin[0] -= dimensions[0] * spacing[0]
+            if orientation[1] < 0:
+                volume = np.flip(volume, axis=1)
+                origin[1] -= dimensions[1] * spacing[1]
+            if orientation[2] < 0:
+                volume = np.flip(volume, axis=2)
 
-        # Extracting the image in each slice and the corresponding Z coordinate (which might not be linear).
-        for i, d in enumerate(ds):
-            if i % 100 == 0:
-                print("...")
-            self.image_mat[i] = d.pixel_array * d.RescaleSlope + d.RescaleIntercept
-            self.positions_z[i] = float(ds[i].ImagePositionPatient[2])
+            self.image_mat = np.transpose(volume)
+        else:
+            print("Reading dicom files...")
+            ds = []  # List of dicoms
+            for i, file in enumerate(os.listdir(self.dcm_path)):
+                if i % 100 == 0:
+                    print(file)
+                ds.append(dcm.dcmread(os.path.join(self.dcm_path, file)))
+                if i % 100 == 0:
+                    print("...")
+            # Sorting the dicoms
+            ds = sorted(ds, key=lambda x: float(x.ImagePositionPatient[2]))
+
+            print("Dicom reading done.\n")
+
+            # MAKING 3D MATRIX OF DICOMS AND 3D MATRIX OF POSITION OF VOXEL
+            print("Converting Dicoms into volume")
+            self.image_mat = np.zeros((len(ds), len(ds[0].pixel_array), len(ds[0].pixel_array[0])))  # Pixel values
+
+            # Extracting constant values along each slice of the dicom
+            spacing_x, spacing_y = float(ds[0].PixelSpacing[0]), float(ds[0].PixelSpacing[1])
+            orientation_x, orientation_y = float(ds[0].ImageOrientationPatient[0]), float(
+                ds[0].ImageOrientationPatient[4])
+            orig_x, orig_y, orig_z = float(ds[0].ImagePositionPatient[0]), float(ds[0].ImagePositionPatient[1]), float(
+                ds[0].ImagePositionPatient[2])
+
+            self.positions_x = orig_x + orientation_x * spacing_x * np.array(range(len(ds[0].pixel_array[0])))
+            self.positions_y = orig_y + orientation_y * spacing_y * np.array(range(len(ds[0].pixel_array)))
+            self.positions_z = np.zeros((len(ds)))
+
+            # Extracting the image in each slice and the corresponding Z coordinate (which might not be linear).
+            for i, d in enumerate(ds):
+                if i % 100 == 0:
+                    print("...")
+                self.image_mat[i] = d.pixel_array * d.RescaleSlope + d.RescaleIntercept
+                self.positions_z[i] = float(ds[i].ImagePositionPatient[2])
+            order = np.argsort(self.positions_z)
+            self.image_mat = np.array(self.image_mat)[order]
+            self.positions_z = np.array(self.positions_z)[order]
 
         print("Volume created.\n")
 
@@ -208,7 +261,9 @@ class qctma(object):
 
         # Creating the interpolation function based on the coordinates and the associated values.
         # Could be a custom function as long as it maps every points of the space to a Young's modulus value.
+        print("Creating interpolator...")
         self.interpolator = NearestNDInterpolator(coords, val)
+        print("Interpolator created.")
 
     def pixel_location_from_coord(self, x, y, z, positions_x, positions_y, positions_z):
         """
@@ -264,6 +319,7 @@ class qctma(object):
         :param save_list: Persistent list where the integration of each element will be stored.
         :param id: ID of the process.
         """
+        from gauss_integ import quadpy as qp
 
         t0 = time.time()
 
@@ -351,11 +407,19 @@ class qctma(object):
         self.e_pool = []
         self.matid = np.zeros(len(self.e_elems))
         while mat_max >= np.min(self.e_elems) and mat_max != -np.inf:
-            max_elem_group_mask = self.e_elems >= mat_max - self.deltaE  # Elements within mat_max and mat_max-deltaE
+            max_elem_group_mask = self.e_elems >= (mat_max - self.deltaE)  # Elements within mat_max and mat_max-deltaE
             self.e_pool.append(np.mean(self.e_elems[max_elem_group_mask]))  # np.mean() or mat_max ?
             self.matid[max_elem_group_mask] = len(self.e_pool)
             self.e_elems[max_elem_group_mask] = -np.inf
             mat_max = np.max(self.e_elems)
+
+        # Assign empty material to exclude_elems_array elements
+        if self.exclude_elems_array is not None:
+            mask_exclude_elems = np.zeros(len(self.matid))
+            mask_exclude_elems[self.exclude_elems_array.astype(int)] = 1
+            mask_exclude_elems = mask_exclude_elems.astype(bool)
+            self.matid[mask_exclude_elems] = len(self.e_pool) + 1
+            self.e_pool.append(0.0)
 
     def inv_num(self, f, ys, init_guess=[0, 2], max_err=0.001):
         """
@@ -390,6 +454,8 @@ class qctma(object):
 
     def e_pool2density(self):
         self.density_pool = self.inv_num(self.density2E, self.e_pool)
+        self.density_pool = np.array(self.density_pool)
+        self.density_pool[self.density_pool <= 0.0001] = min(0.0001, np.min(np.abs(self.density_pool)))
 
     def save_mesh(self, save_mesh_path, report=True):
         """
@@ -401,7 +467,13 @@ class qctma(object):
         if save_mesh_path == "":
             save_mesh_path = os.path.splitext(self.mesh_path)[0] + "_QCTMA.cdb"
         if save_mesh_path.lower().endswith(".cdb"):
-            write_cdb_mat(self.mesh_path, save_mesh_path, self.matid, self.e_pool, self.density_pool)
+            plastic_pool = None
+            if self.E2plastic_params is not None:
+                plastic_pool = []
+                for E in self.e_pool:
+                    plastic_pool.append(self.E2plastic_params(E))
+            write_cdb_mat(self.mesh_path, save_mesh_path, self.matid, self.e_pool, self.density_pool,
+                          plastic_pool=plastic_pool)
         else:
             warnings.warn("WARNING: Extension of the desired save path of the mesh not recognized. Unable to save the Mesh.")
 
@@ -449,7 +521,7 @@ class qctma(object):
             content.append(Spacer(1, 12))
 
             plt.figure(figsize=(5.31, 3))
-            rho = np.linspace(np.min(self.e_mat), np.max(self.e_mat), 100)
+            # rho = np.linspace(np.min(self.e_mat), np.max(self.e_mat), 100)
             e = self.density2E(rho)
             plt.plot(rho, e, '-')
             plt.xlabel('Density')
