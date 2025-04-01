@@ -14,6 +14,6 @@ setup(name='qctma',
       package_data={'': ['*.json']},
       py_modules=['qctma', 'rw_cdb'],
       install_requires=['matplotlib>=2.2.5', 'numpy>=1.19.5', 'pydicom>=2.1.2', 'scipy>=1.5.4',
-                        'reportlab>=3.5.66'
+                        'reportlab>=3.5.66', 'nibabel>=5.2.0'
                         ],
       python_requires=">=3.6")
