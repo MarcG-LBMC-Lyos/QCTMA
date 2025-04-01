@@ -1,2 +1,4 @@
-/qctma1.0.x/auto_install.py
 /qctma1.0.x/build/
+/qctma1.0.x/dist/
+/qctma1.0.x/auto_install.py
+/qctma1.0.x/qctma.egg-info/
