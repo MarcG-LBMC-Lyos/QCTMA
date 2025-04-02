@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='qctma',
-      version='1.0.26',
+      version='1.0.27',
       description="Injects material (Young's modulus) to each element, based on a Dicom stack, and gray level to Young's"
                   "modulus relationships. Specifically designed to be used with Ansys .cdb meshes.",
       long_description="Injects material (Young's modulus) to each element, based on a Dicom stack, and gray level to Young's"

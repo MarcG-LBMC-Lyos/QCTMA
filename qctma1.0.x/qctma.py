@@ -19,7 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
 
-__version__ = "1.0.26"
+__version__ = "1.0.27"
 
 class qctma(object):
     """
