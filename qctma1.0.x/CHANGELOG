@@ -73,3 +73,6 @@
 
 [1.0.27]
 - Added nibabel as a dependency.
+
+[1.0.28]
+- Added option to extract material parameters from cdb.
