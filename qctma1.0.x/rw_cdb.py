@@ -1,9 +1,9 @@
 import numpy as np
 
 
-__version__ = "1.0.27"
+__version__ = "1.0.28"
 
-def read_cdbfile(path, exclude_elems_array=None, type='Tet'):
+def read_cdbfile(path, exclude_elems_array=None, type='Tet', get_materials=False):
     """
     Extract the elements number and their associated material from a cdb mesh file.
     :param path: Path to the cdb file.
@@ -11,12 +11,13 @@ def read_cdbfile(path, exclude_elems_array=None, type='Tet'):
     """
 
     # EXTRACTING THE TABLES OF CONNECTION AND COORDINATES
-    materials = []  # Material property number
+    material2elem_tab = []  # Material property number
     elems = []  # Table of connection
     nodes = []  # Table of coordinates
     x = []  # x-coordinates
     y = []  # y-coordinates
     z = []  # z-coordinates
+    materials = {}
     with open(path, 'r', errors="ignore") as f:
         # Open the mesh_file_path file to extract the table of connection and the table of coordinates.
         extract_nodes = False
@@ -45,7 +46,7 @@ def read_cdbfile(path, exclude_elems_array=None, type='Tet'):
                 if IS2LINES:
                     line += f.readline()
                 line = line.replace("\n", '')
-                materials.append(int(line[:ELEM_LEN]))
+                material2elem_tab.append(int(line[:ELEM_LEN]))
                 line_elem = [int(line[i * ELEM_LEN:(i + 1) * ELEM_LEN]) for i in
                              range(ELEM_START, len(line) // ELEM_LEN)]
                 elems.append(line_elem)
@@ -79,8 +80,24 @@ def read_cdbfile(path, exclude_elems_array=None, type='Tet'):
 
             line = f.readline()
 
+            if get_materials:
+                if line.find("MPDATA") != -1:
+                    mat_id = int(line.split(',')[4])
+                    # Check if material id already exists in the dict
+                    if mat_id not in materials:
+                        materials[mat_id] = {}
+                    if ",EX," in line:
+                        E = float(line.split(',')[6])
+                        materials[mat_id]['E'] = E
+                    if ",DENS," in line:
+                        density = float(line.split(',')[6])
+                        materials[mat_id]['density'] = density
+                    if ",NUXY," in line:
+                        nu = float(line.split(',')[6])
+                        materials[mat_id]['nu'] = nu
+
     elems = np.array(elems)
-    materials = np.array(materials)
+    material2elem_tab = np.array(material2elem_tab)
     nodes = np.array(nodes)
     x = np.array(x)
     y = np.array(y)
@@ -91,9 +108,12 @@ def read_cdbfile(path, exclude_elems_array=None, type='Tet'):
         mask_exclude_elems[exclude_elems_array.astype(int)] = 1
         mask_exclude_elems = mask_exclude_elems.astype(bool)
         elems = elems[~mask_exclude_elems]
-        materials = materials[~mask_exclude_elems]
+        material2elem_tab = material2elem_tab[~mask_exclude_elems]
 
-    return elems, materials, nodes, x, y, z
+    if get_materials:
+        return elems, material2elem_tab, nodes, x, y, z, materials
+    else:
+        return elems, material2elem_tab, nodes, x, y, z
 
 def get_density(path):
     """
