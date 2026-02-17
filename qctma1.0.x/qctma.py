@@ -505,6 +505,7 @@ class qctma(object):
             plt.ylabel('Density')
             plt.tight_layout()
             plt.savefig(temp_img_path1)
+            plt.close()
             im = Image(temp_img_path1)
             content.append(im)
             del im
@@ -528,6 +529,7 @@ class qctma(object):
             plt.ylabel("Young's modulus")
             plt.tight_layout()
             plt.savefig(temp_img_path2)
+            plt.close()
             im = Image(temp_img_path2)
             content.append(im)
             del im
